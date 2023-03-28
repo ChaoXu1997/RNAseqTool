@@ -48,7 +48,7 @@ Principal Component Analysis (PCA) is a widely used technique in RNA sequencing 
 
 Differential gene expression analysis is a common task in RNA sequencing (RNAseq) data analysis, and DESeq2 is a widely used software package for this purpose.
 
-![PCA](README\TIF\02_DEseq2.gif)
+![PCA](README/TIF/02_DEseq2.gif)
 
 
 
@@ -60,7 +60,7 @@ Differential gene expression analysis is a common task in RNA sequencing (RNAseq
 
 A volcano plot is a commonly used graphical tool for visualizing the results of differential gene expression analysis. It displays the log2 fold change (log2FC) on the x-axis and  -log10(adj.p-value) on the y-axis. volcano plots are a powerful and commonly used tool for visualizing the results of differential gene expression analysis and can help researchers to identify key genes and pathways that are affected by changes in gene expression.
 
-![PCA](README\TIF\03_Volcano.gif)
+![PCA](README/TIF/03_Volcano.gif)
 
 
 
@@ -72,7 +72,7 @@ Gene enrichment analysis can help to identify the key biological processes and p
 
 
 
-![PCA](README\TIF\04_normEnrich.gif)
+![PCA](README/TIF/04_normEnrich.gif)
 
 
 
@@ -82,7 +82,7 @@ Gene enrichment analysis can help to identify the key biological processes and p
 
 GSEA can be applied to a wide variety of genomic data, including gene expression, copy number variation, and DNA methylation data, and can be used to identify pathways or biological processes that are differentially regulated between two groups of samples. GSEA involves the comparison of the expression of a pre-defined set of genes (a gene set) between two groups of samples, such as disease vs. healthy, or treatment vs. control. It has been widely used in biomedical research to uncover the underlying biological mechanisms involved in diseases and drug responses, and to identify potential biomarkers and therapeutic targets.
 
-![PCA](README\TIF\05_GSEA.gif)
+![PCA](README/TIF/05_GSEA.gif)
 
 ## <span id = "h6">Gene Trend Analysis</span>
 
@@ -92,7 +92,7 @@ Gene trend analysis is a method for identifying genes that have similar expressi
 
 
 
-![PCA](README\TIF\06_geneTrend.gif)
+![PCA](README/TIF/06_geneTrend.gif)
 
 ## <span id = "h7">WGCNA Analysis</span>
 
@@ -100,7 +100,7 @@ Gene trend analysis is a method for identifying genes that have similar expressi
 
 Weighted Gene Co-expression Network Analysis (WGCNA) is a powerful systems biology approach that can be used to identify co-expressed genes and their relationships with clinical or phenotypic traits. It is implemented in R and requires a set of gene expression data and sample information, such as clinical or phenotypic traits.
 
-![PCA](README\TIF\07_WGCNA.gif)
+![PCA](README/TIF/07_WGCNA.gif)
 
 
 
