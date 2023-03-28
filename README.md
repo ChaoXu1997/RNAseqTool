@@ -40,7 +40,7 @@ Principal Component Analysis (PCA) is a widely used technique in RNA sequencing 
 
 
 
-![PCA](README\TIF\01_PCA.gif)
+![PCA](README/TIF/01_PCA.gif)
 
 ## <span id = "h2">Differential Gene Expression Analysis</span>
 
