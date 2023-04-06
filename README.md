@@ -1,6 +1,6 @@
 ## RNAseqTool: A Shiny App for Interactive RNAseq Analysis and Visualization  
 
-RNAseqTool provides an interactive and user-friendly method for users to analyze RNAseq data, which could be a great solution for RNAseq data analysis and visualization. Here are some potential features that the Shiny App could include:<img src="README/hex-RNAseqTool.png" align="right" height="250" />
+RNAseqTool provides an interactive and user-friendly method for users to analyze RNAseq data, which could be a great solution for RNAseq data analysis and visualization. Here are some potential features that the Shiny App could include:<img src="inst/app/www/favicon.png" align="right" height="250" />
 
 - Interactive visualization
 
@@ -28,8 +28,12 @@ RNAseqTool provides an interactive and user-friendly method for users to analyze
 You can install the development version of RNAseqTool from [GitHub](https://github.com/) with:
 
 ```R
+# install RNAseqTool from github
 # install.packages("devtools")
 devtools::install_github("ChaoXu1997/RNAseqTool")
+
+# run
+RNAseqTool::run_app()
 ```
 
 ## <span id = "h1">Principal Component Analysis (PCA)</span>

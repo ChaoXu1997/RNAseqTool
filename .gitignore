@@ -2,6 +2,11 @@
 README/*
 !README/TIF
 
+# Rmd
+README.Rmd
+
+# Rproj
+.Rproj
 
 # History files
 .Rhistory

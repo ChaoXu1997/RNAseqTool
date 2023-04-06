@@ -109,7 +109,7 @@ app_ui <- function(request) {
           )
       ),
       footer = bs4Dash::dashboardFooter(
-        left = div("Developed by xuchao",class="text-primary"),
+       # left = div("Developed by xuchao",class="text-primary"),
         right = div(Sys.Date(),class="text-primary")
       )
     )
