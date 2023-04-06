@@ -8,6 +8,9 @@ README.Rmd
 # Rproj
 *.Rproj
 
+# data-raw
+data-raw/
+
 # History files
 *.Rhistory
 .Rapp.history

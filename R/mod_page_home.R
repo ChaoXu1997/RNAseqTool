@@ -10,8 +10,8 @@
 mod_page_home_ui <- function(id){
   ns <- NS(id)
   # carousel
-  carouseDat <- openxlsx::read.xlsx("data/carousel.xlsx") %>%
-    dplyr::arrange(order)
+  # carouseDat <- openxlsx::read.xlsx("data/carousel.xlsx") %>%
+  #   dplyr::arrange(order)
 
   fluidRow(
     column(
@@ -92,11 +92,11 @@ mod_page_home_ui <- function(id){
         id = "mycarousel",
         width = 12,
         indicators = TRUE,
-        .list = lapply(carouseDat$order,function(i){
+        .list = lapply(RNAseqTool::carouseDat$order,function(i){
           carouselItem(
-            caption = carouseDat$caption[i],
+            caption = RNAseqTool::carouseDat$caption[i],
             align = "center",
-            tags$img(src = paste0("www/",carouseDat$png_path[i]),width="700",height="500")
+            tags$img(src = paste0("www/",RNAseqTool::carouseDat$png_path[i]),width="700",height="500")
           )
         })
 

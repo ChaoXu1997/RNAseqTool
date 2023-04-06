@@ -82,8 +82,8 @@ golem::run_dev()
 
 
 
-
-
+devtools::install_github("ChaoXu1997/RNAseqTool")
+RNAseqTool::run_app()
 
 
 
