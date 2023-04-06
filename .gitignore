@@ -6,10 +6,10 @@ README/*
 README.Rmd
 
 # Rproj
-.Rproj
+*.Rproj
 
 # History files
-.Rhistory
+*.Rhistory
 .Rapp.history
 
 # Session Data files
