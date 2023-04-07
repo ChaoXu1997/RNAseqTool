@@ -610,7 +610,8 @@ mod_page_gsea_server <- function(id){
       data$geneList <- reactive({openxlsx::read.xlsx(input$file_geneList$datapath,rowNames = F)})
     })
     observeEvent(input$act_expl_geneList,{
-      data$geneList <- reactive({openxlsx::read.xlsx("./data/gene_log2FC.xlsx",rowNames = F)})
+      #data$geneList <- reactive({openxlsx::read.xlsx("./data/gene_log2FC.xlsx",rowNames = F)})
+      data$geneList <- reactive({RNAseqTool::geneList})
     })
     # geneList hotOutput
     output$hot_geneList <-
@@ -781,7 +782,8 @@ mod_page_gsea_server <- function(id){
         paste("geneList_", Sys.Date(), ".xlsx", sep="")
       },
       content = function(file) {
-        file.copy("./data/gene_log2FC.xlsx",file)
+        #file.copy("./data/gene_log2FC.xlsx",file)
+        openxlsx::write.xlsx(RNAseqTool::geneList,file)
       }
     )
     #output$tt <- renderPrint({addGene()})

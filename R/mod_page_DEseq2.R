@@ -196,7 +196,8 @@ mod_page_DEseq2_server <- function(id){
       data$expr <- reactive({openxlsx::read.xlsx(input$file_expr$datapath,rowNames = F)})
     })
     observeEvent(input$act_expl_expr,{
-      data$expr <- reactive({openxlsx::read.xlsx("./data/expr_count.xlsx",rowNames = F)})
+      #data$expr <- reactive({openxlsx::read.xlsx("./data/expr_count.xlsx",rowNames = F)})
+      data$expr <- reactive({RNAseqTool::expr_count})
     })
 
     output$hot_expr <-
@@ -215,7 +216,8 @@ mod_page_DEseq2_server <- function(id){
       data$sampleInfo <- reactive({openxlsx::read.xlsx(input$file_sampleInfo$datapath)})
     })
     observeEvent(input$act_expl_sampleInfo,{
-      data$sampleInfo <- reactive({openxlsx::read.xlsx("./data/sample_info.xlsx")})
+      #data$sampleInfo <- reactive({openxlsx::read.xlsx("./data/sample_info.xlsx")})
+      data$sampleInfo <- reactive({RNAseqTool::sampleInfo})
     })
 
     output$hot_sampleInfo <-
@@ -343,7 +345,8 @@ mod_page_DEseq2_server <- function(id){
       paste("expr_template_", Sys.Date(), ".xlsx", sep="")
     },
     content = function(file) {
-      file.copy("./data/expr_count.xlsx",file)
+      #file.copy("./data/expr_count.xlsx",file)
+      openxlsx::write.xlsx(RNAseqTool::expr_count,file)
     }
   )
 
@@ -352,7 +355,8 @@ mod_page_DEseq2_server <- function(id){
       paste("sampleInfo_template_", Sys.Date(), ".xlsx", sep="")
     },
     content = function(file) {
-      file.copy("./data/sample_info.xlsx",file)
+      #file.copy("./data/sample_info.xlsx",file)
+      openxlsx::write.xlsx(RNAseqTool::sampleInfo,file)
     }
   )
 

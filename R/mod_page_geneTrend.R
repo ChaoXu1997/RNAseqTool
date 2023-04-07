@@ -406,7 +406,8 @@ mod_page_geneTrend_server <- function(id){
       data$expr <- reactive({openxlsx::read.xlsx(input$file_expr$datapath,rowNames = F)})
     })
     observeEvent(input$act_expl_expr,{
-      data$expr <- reactive({openxlsx::read.xlsx("./data/Mfuzz_expr.xlsx",rowNames = F)})
+      #data$expr <- reactive({openxlsx::read.xlsx("./data/Mfuzz_expr.xlsx",rowNames = F)})
+      data$expr <- reactive({RNAseqTool::expr_mfuzz})
     })
 
     output$hot_expr <-
@@ -425,7 +426,8 @@ mod_page_geneTrend_server <- function(id){
       data$sampleInfo <- reactive({openxlsx::read.xlsx(input$file_sampleInfo$datapath)})
     })
     observeEvent(input$act_expl_sampleInfo,{
-      data$sampleInfo <- reactive({openxlsx::read.xlsx("./data/Mfuzz_groupleIfo.xlsx")})
+      #data$sampleInfo <- reactive({openxlsx::read.xlsx("./data/Mfuzz_groupleIfo.xlsx")})
+      data$sampleInfo <- reactive({RNAseqTool::sampleInfo_mfuzz})
     })
 
     output$hot_sampleInfo <-
@@ -632,7 +634,8 @@ mod_page_geneTrend_server <- function(id){
         paste("expr_template_", Sys.Date(), ".xlsx", sep="")
       },
       content = function(file) {
-        file.copy("./data/Mfuzz_expr.xlsx",file)
+        #file.copy("./data/Mfuzz_expr.xlsx",file)
+        openxlsx::write.xlsx(RNAseqTool::expr_mfuzz,file)
       }
     )
 
@@ -641,7 +644,8 @@ mod_page_geneTrend_server <- function(id){
         paste("smpleInfo_template_", Sys.Date(), ".xlsx", sep="")
       },
       content = function(file) {
-        file.copy("./data/Mfuzz_groupleIfo.xlsx",file)
+        #file.copy("./data/Mfuzz_groupleIfo.xlsx",file)
+        openxlsx::write.xlsx(RNAseqTool::sampleInfo_mfuzz,file)
       }
     )
   })

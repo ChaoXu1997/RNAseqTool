@@ -553,7 +553,8 @@ mod_page_wgcna_server <- function(id){
       data$expr <- reactive({openxlsx::read.xlsx(input$file_expr$datapath,rowNames = F)})
     })
     observeEvent(input$act_expl_expr,{
-      data$expr <- reactive({openxlsx::read.xlsx("./data/WGCNA_LiverFemale3600.xlsx",rowNames = F)})
+      #data$expr <- reactive({openxlsx::read.xlsx("./data/WGCNA_LiverFemale3600.xlsx",rowNames = F)})
+      data$expr <- reactive({RNAseqTool::expr_wgcna})
     })
 
     output$hot_datExpr <-
@@ -571,7 +572,8 @@ mod_page_wgcna_server <- function(id){
       data$sampleInfo <- reactive({openxlsx::read.xlsx(input$file_sampleInfo$datapath)})
     })
     observeEvent(input$act_expl_sampleInfo,{
-      data$sampleInfo <- reactive({openxlsx::read.xlsx("./data/WGCNA_ClinicalTraits.xlsx")})
+      #data$sampleInfo <- reactive({openxlsx::read.xlsx("./data/WGCNA_ClinicalTraits.xlsx")})
+      data$sampleInfo <- reactive({sampleInfo_wgcna})
     })
 
     output$hot_datTrait <-
@@ -988,7 +990,8 @@ mod_page_wgcna_server <- function(id){
         paste("datExpr_template_", Sys.Date(), ".xlsx", sep="")
       },
       content = function(file) {
-        file.copy("./data/WGCNA_LiverFemale3600.xlsx",file)
+        #file.copy("./data/WGCNA_LiverFemale3600.xlsx",file)
+        openxlsx::write.xlsx(RNAseqTool::expr_wgcna,file)
       }
     )
 
@@ -997,7 +1000,8 @@ mod_page_wgcna_server <- function(id){
         paste("datTraits_template_", Sys.Date(), ".xlsx", sep="")
       },
       content = function(file) {
-        file.copy("./data/WGCNA_ClinicalTraits.xlsx",file)
+        #file.copy("./data/WGCNA_ClinicalTraits.xlsx",file)
+        openxlsx::write.xlsx(RNAseqTool::sampleInfo_wgcna,file)
       }
     )
 

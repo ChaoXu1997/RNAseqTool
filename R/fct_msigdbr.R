@@ -23,7 +23,7 @@
 # db_collections <- openxlsx::read.xlsx("./data/db_collections.xlsx")
 
 species <- as.data.frame(msigdbr::msigdbr_species())[,1]
-db_collections <- openxlsx::read.xlsx("./data/db_collections.xlsx")
+#db_collections <- openxlsx::read.xlsx("./data/db_collections.xlsx")
 # function
 msigdbr_func <- function(species = "Homo sapiens", database= db_collections$Database_num[2]){#,species = "Homo sapiens",category = "C5",subcategory = c("BP","CC","MF")
   #database= c(db_collections$Database_num[14])

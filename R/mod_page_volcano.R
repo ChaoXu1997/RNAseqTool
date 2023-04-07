@@ -177,7 +177,8 @@ mod_page_volcano_server <- function(id){
 
 
     observeEvent(input$act_expl_DEseq2,{
-      data$sheetnames <- reactive({openxlsx::getSheetNames("data/DEseq2-results.xlsx")})
+      #data$sheetnames <- reactive({openxlsx::getSheetNames("data/DEseq2-results.xlsx")})
+      data$sheetnames <- reactive({RNAseqTool::sheetnames})
       data$example <- T
 
     })
@@ -185,7 +186,8 @@ mod_page_volcano_server <- function(id){
     ## choose sheet
     observeEvent(input$chooseSheet,{
       data$DEGs <- if(data$example){
-        reactive({openxlsx::read.xlsx("./data/DEseq2-results.xlsx",sheet = isolate(input$sheetname),rowNames = T)})
+        #reactive({openxlsx::read.xlsx("./data/DEseq2-results.xlsx",sheet = isolate(input$sheetname),rowNames = T)})
+        reactive({RNAseqTool::DEseq2_res})
       }else{
         req(input$file_DEseq2)
         reactive({openxlsx::read.xlsx(input$file_DEseq2$datapath,sheet = isolate(input$sheetname),rowNames = T)})
