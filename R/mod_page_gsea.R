@@ -77,8 +77,8 @@ mod_page_gsea_ui <- function(id){
                         ns("pk_database"),
                         label = "Select database (multiple choices allowed)",
                         multiple = TRUE,
-                        choices = db_collections$Database_num,
-                        selected = db_collections$Database_num[15:17],
+                        choices = RNAseqTool::db_collections$Database_num,
+                        selected = RNAseqTool::db_collections$Database_num[15:17],
                         options = pickerOptions(
                           actionsBox = TRUE,
                           title = "Please select a month",
