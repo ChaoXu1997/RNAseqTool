@@ -7,6 +7,7 @@
 #' @noRd
 #'
 #' @import Mfuzz
+#' @importFrom e1071 cmeans
 
 
 # library(cluster)
@@ -42,6 +43,7 @@ mfuzz_ana <- function(
 
   ){
   # clean expr
+  library(e1071)
   expr_raw <- data %>%  tibble::column_to_rownames("Gene") %>% #head() %>%
     t() %>% scale() %>%  as.data.frame()
   expr <- expr_raw[match(groupInfo$Sample,rownames(expr_raw)),]
@@ -82,9 +84,12 @@ mfuzz_all_plot <- function(
     lineWidth = .8,
     baseSize = 14
   ){
-  centers_melt <- as.data.frame(cl$centers) %>%
-    dplyr::mutate(Clusters= paste0("Cluster ",rownames(.))) %>%
-    reshape2::melt()
+  # centers_melt <- as.data.frame(cl$centers) %>%
+  #   dplyr::mutate(Clusters= paste0("Cluster ",rownames(.))) %>%
+  #   reshape2::melt()
+  centers <- as.data.frame(cl$centers)
+  centers$Clusters <- paste0("Cluster ",rownames(centers))
+  centers_melt <- reshape2::melt(centers)
   p <- ggplot(centers_melt,aes(
     factor(variable,levels = levels)
     ,value,color=Clusters,group=Clusters)) +

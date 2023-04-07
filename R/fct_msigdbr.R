@@ -25,17 +25,17 @@
 species <- as.data.frame(msigdbr::msigdbr_species())[,1]
 #db_collections <- openxlsx::read.xlsx("./data/db_collections.xlsx")
 # function
-msigdbr_func <- function(species = "Homo sapiens", database= db_collections$Database_num[2]){#,species = "Homo sapiens",category = "C5",subcategory = c("BP","CC","MF")
+msigdbr_func <- function(species = "Homo sapiens", database= RNAseqTool::db_collections$Database_num[2]){#,species = "Homo sapiens",category = "C5",subcategory = c("BP","CC","MF")
   #database= c(db_collections$Database_num[14])
   purrr::map_dfr(as.list(database),function(x){
-    pos <- match(x,db_collections$Database_num)
-    gs_cat <- db_collections$gs_cat[pos]
-    gs_subcat <- if(is.na(db_collections$gs_subcat[pos])){
+    pos <- match(x,RNAseqTool::db_collections$Database_num)
+    gs_cat <- RNAseqTool::db_collections$gs_cat[pos]
+    gs_subcat <- if(is.na(RNAseqTool::db_collections$gs_subcat[pos])){
       ""
     }else{
-      db_collections$gs_subcat[pos]
+      RNAseqTool::db_collections$gs_subcat[pos]
     }
-    Database <- db_collections$Database[pos]
+    Database <- RNAseqTool::db_collections$Database[pos]
     msigdbr::msigdbr(species = species, category = gs_cat, subcategory = gs_subcat) %>%
       dplyr::mutate(Database=Database)
   })%>%

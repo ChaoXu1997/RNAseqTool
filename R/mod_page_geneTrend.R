@@ -550,9 +550,9 @@ mod_page_geneTrend_server <- function(id){
                     cl=mfuzz()$cl,
                     levels=input$levels,
                     colors=c("#76BA99", "#EB4747", "#996699","#f1c40f","#ea8685","#775039","#b83570","#e4b8d5","#9ebc19"),
-                    pointSize = 3,
-                    lineWidth = .8,
-                    baseSize = 14
+                    pointSize = input$pointSize,
+                    lineWidth = input$lineWidth,
+                    baseSize = input$baseSize
                   )
                   #shinipsum::random_ggplot()
                 }else{

@@ -573,7 +573,7 @@ mod_page_wgcna_server <- function(id){
     })
     observeEvent(input$act_expl_sampleInfo,{
       #data$sampleInfo <- reactive({openxlsx::read.xlsx("./data/WGCNA_ClinicalTraits.xlsx")})
-      data$sampleInfo <- reactive({sampleInfo_wgcna})
+      data$sampleInfo <- reactive({RNAseqTool::sampleInfo_wgcna})
     })
 
     output$hot_datTrait <-
