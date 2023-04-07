@@ -322,10 +322,10 @@ mod_page_enrich_go_server <- function(id){
 
     # Example
     observeEvent(input$act_expl,{
-      gene <- read.table("./data/genes.txt")[,1]
+      #gene <- read.table("./data/genes.txt")[,1]
       updateTextAreaInput(
         inputId = "gene" ,
-        value =paste(gene,collapse ="\n")
+        value =paste(RNAseqTool::gene,collapse ="\n")
       )
     })
 
