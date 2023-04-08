@@ -1,16 +1,38 @@
 Package: RNAseqTool
 Title: PKG_TITLE
-Version: 0.0.0.9000
+Version: 0.0.0.1
 Authors@R: 
     person("AUTHOR_FIRST", "AUTHOR_LAST", , "AUTHOR@MAIL.COM", role = c("cre", "aut"))
 Description: PKG_DESC.
 License: MIT + file LICENSE
 Imports: 
-    bs4Dash,
+    bs4Dash (>= 2.2.1),
+    clusterProfiler (>= 4.6.0),
+    colourpicker (>= 1.2.0),
     config (>= 0.3.1),
+    DESeq2 (>= 1.38.2),
+    dplyr (>= 1.1.0),
+    forcats (>= 1.0.0),
+    ggbiplot (>= 0.55),
+    ggplot2 (>= 3.4.1),
+    glue (>= 1.6.2),
     golem (>= 0.3.5.9001),
+    GseaVis (>= 0.0.8),
+    htmltools (>= 0.5.4),
+    Mfuzz (>= 2.58.0),
+    msigdbr (>= 7.5.1),
+    openxlsx (>= 4.2.5.1),
+    paletteer (>= 1.5.0),
+    purrr (>= 1.0.1), 
+    rhandsontable (>= 0.3.8),
     shiny (>= 1.7.4),
-    shinyWidgets
+    shinyjqui (>= 0.4.1),
+    shinyWidgets (>= 0.7.6),
+    spsComps (>= 0.3.2.1),
+    stringr (>= 1.5.0),
+    tibble (>= 3.1.8),
+    waiter(>= 0.2.5),
+    WGCNA (>= 1.72-1)
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

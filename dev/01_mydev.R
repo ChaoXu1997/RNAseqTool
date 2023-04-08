@@ -1,12 +1,66 @@
 # shiny app prototyping
 # remotes::install_github("Thinkr-open/shinipsum")
 library(shinipsum)
+pkgs <- c("shiny",   "glue", "htmltools", "golem",
+          "bs4Dash",
+          "DESeq2",
+          "Mfuzz",
+          "stringr",
+          "forcats",
+          #"e1071",
+          "GseaVis",
+          "clusterProfiler",
+          "msigdbr",
+          "dplyr",
+          "purrr",
+          "tibble",
+          "ggplot2",
+          "ggbiplot",
+          "WGCNA",
+          "shinyWidgets",
+          "colourpicker",
+          "spsComps",
+          "openxlsx",
+          "paletteer",
+          "shinyjqui",
+          "rhandsontable",
+          "waiter")
+
+install.packages("pacman")
+pacman::p_load(pkgs)
+
+sink("my_data.txt")
+sessionInfo()
+sink()
 
 golem::use_recommended_deps(
   pkg =golem:: get_golem_wd(),
   recommended = c(
     "shiny", "DT", "attempt", "glue", "htmltools", "golem",
-    "bs4Dash"
+    "bs4Dash",
+    "DESeq2",
+    "Mfuzz",
+    "stringr",
+    "forcats",
+    #"e1071",
+    "GseaVis",
+    "clusterProfiler",
+    "msigdbr",
+    "dplyr",
+    "purrr",
+    "tibble",
+    "ggplot2",
+    "ggbiplot",
+    "WGCNA",
+    "shinyWidgets",
+    "colourpicker",
+    "spsComps",
+    "openxlsx",
+    "paletteer",
+    "shinyjqui",
+    "rhandsontable",
+    "waiter"
+
   )
 )
 attachment::att_amend_desc()
