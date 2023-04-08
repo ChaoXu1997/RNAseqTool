@@ -28,12 +28,27 @@ RNAseqTool provides an interactive and user-friendly method for users to analyze
 You can install the development version of RNAseqTool from [GitHub](https://github.com/) with:
 
 ```R
-# install RNAseqTool from github
-# install.packages("devtools")
-devtools::install_github("ChaoXu1997/RNAseqTool")
+# Install devtools
+install.packages("devtools")
+# Install BiocManager
+install.packages("BiocManager")
 
-# run
+# Install dependent R packages from Bioconductor
+pkgs <- c('clusterProfiler', 'DESeq2', 'Mfuzz')
+lapply(pkgs,function(pkg){
+  if (!require(pkg, quietly = TRUE))
+    BiocManager::install(pkg,update = F)
+})
+# Install dependent R packages from GitHub
+devtools::install_github("vqv/ggbiplot")
+devtools::install_github("junjunlab/GseaVis")
+
+# Install RNAseqTool
+devtools::install_github("ChaoXu1997/RNAseqTool")
+# Run ShinyApp
 RNAseqTool::run_app()
+# Remove RNAseqTool
+remove.packages("RNAseqTool")
 ```
 
 ## <span id = "h1">Principal Component Analysis (PCA)</span>
