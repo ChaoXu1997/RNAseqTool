@@ -554,7 +554,6 @@ mod_page_geneTrend_server <- function(id){
                     lineWidth = input$lineWidth,
                     baseSize = input$baseSize
                   )
-                  #shinipsum::random_ggplot()
                 }else{
                   mfuzz_single_plot(
                     mfuzz()$eset,
@@ -601,7 +600,6 @@ mod_page_geneTrend_server <- function(id){
               lineWidth = .8,
               baseSize = 14
             )
-            #shinipsum::random_ggplot()
           }else{
             mfuzz_single_plot(
               mfuzz()$eset,

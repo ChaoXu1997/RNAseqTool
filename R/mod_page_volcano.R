@@ -253,7 +253,6 @@ mod_page_volcano_server <- function(id){
       })
 
       output$plot <-renderPlot({
-        #shinipsum::random_ggplot()
         p()
       })
 
