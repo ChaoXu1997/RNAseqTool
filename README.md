@@ -51,6 +51,15 @@ RNAseqTool::run_app()
 remove.packages("RNAseqTool")
 ```
 
+## Deploy to shiny server
+
+```R
+
+
+```
+
+ 
+
 ## <span id = "h1">Principal Component Analysis (PCA)</span>
 
 > **Analysis:**  prcomp {stats};  **Visualization:** {ggplot2 }
