@@ -13,7 +13,7 @@ Imports:
     DESeq2 (>= 1.38.2),
     dplyr (>= 1.1.0),
     forcats (>= 1.0.0),
-    ggbiplot (>= 0.55),
+    ggbiplot (>= 0.5.5),
     ggplot2 (>= 3.4.1),
     glue (>= 1.6.2),
     golem (>= 0.3.5.9001),
