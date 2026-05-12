@@ -11,6 +11,8 @@ vi.mock('../api/client', () => ({
   getWGCNAPlot: vi.fn(),
   getTaskStatus: vi.fn(),
   startAnalysis: vi.fn(),
+  savePlotRds: vi.fn(),
+  loadPlotRds: vi.fn(),
   default: {
     get: vi.fn(),
     post: vi.fn(),
@@ -189,5 +191,17 @@ describe('WGCNA Page', () => {
     await userEvent.clear(input)
     await userEvent.type(input, '500')
     expect(input.value).toBe('500')
+  })
+
+  it('renders PlotSaveLoad component', () => {
+    render(<WGCNA />)
+    expect(screen.getByText('保存绘图 (RDS)')).toBeInTheDocument()
+    expect(screen.getByText('加载绘图 (RDS)')).toBeInTheDocument()
+  })
+
+  it('PlotSaveLoad save button is disabled when no results', () => {
+    render(<WGCNA />)
+    const saveBtn = screen.getByText('保存绘图 (RDS)')
+    expect(saveBtn).toBeDisabled()
   })
 })

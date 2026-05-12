@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useWorkspaceStore } from '../stores/workspace'
 import { runGSEA, getPlot, getDatabases, getSpecies } from '../api/client'
+import { PlotSaveLoad } from '../components/PlotSaveLoad'
 
 const DEFAULT_DATABASES = [
   'C5:GO:BP',
@@ -247,6 +248,28 @@ export default function GSEA() {
     a.click()
     URL.revokeObjectURL(url)
   }, [svg, geneSetID])
+
+  // Handle params loaded from RDS
+  const handleParamsLoaded = useCallback(
+    (loadedParams: Record<string, unknown>) => {
+      if (loadedParams.geneSetID) setGeneSetID(loadedParams.geneSetID as string)
+      if (loadedParams.addGene !== undefined) setAddGene(loadedParams.addGene as boolean)
+      if (loadedParams.addPval !== undefined) setAddPval(loadedParams.addPval as boolean)
+      if (loadedParams.pvalSize) setPvalSize(loadedParams.pvalSize as number)
+      if (loadedParams.subPlot) setSubPlot(loadedParams.subPlot as number)
+      if (loadedParams.termWidth) setTermWidth(loadedParams.termWidth as number)
+      if (loadedParams.base_size) setBaseSize(loadedParams.base_size as number)
+      if (loadedParams.arrowType) setArrowType(loadedParams.arrowType as 'open' | 'closed')
+      if (loadedParams.geneCol) setGeneCol(loadedParams.geneCol as string)
+      if (loadedParams.newGsea !== undefined) setNewGsea(loadedParams.newGsea as boolean)
+    },
+    []
+  )
+
+  // Handle SVG loaded from RDS
+  const handleSvgLoaded = useCallback((svgContent: string) => {
+    setSvg(svgContent)
+  }, [])
 
   // Export RData
   const handleExportRData = useCallback(async () => {
@@ -742,6 +765,27 @@ export default function GSEA() {
           </button>
         </div>
       </div>
+
+      {/* Plot Save/Load */}
+      <PlotSaveLoad
+        module="gsea"
+        params={{
+          geneSetID,
+          addGene,
+          addPval,
+          pvalSize,
+          subPlot,
+          termWidth,
+          base_size: baseSize,
+          arrowType,
+          geneCol,
+          newGsea,
+        }}
+        plotData={gseaResult ? { result: gseaResult } : null}
+        disabled={!gseaResult}
+        onParamsLoaded={handleParamsLoaded}
+        onSvgLoaded={handleSvgLoaded}
+      />
 
       {/* Plot Display Area */}
       <div data-testid="gsea-plot-area" className="border border-gray-200 rounded-lg p-4">

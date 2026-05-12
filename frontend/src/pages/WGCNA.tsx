@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useWorkspaceStore } from '../stores/workspace'
 import { runWGCNA, getWGCNAPlot, getTaskStatus } from '../api/client'
+import { PlotSaveLoad } from '../components/PlotSaveLoad'
 
 interface WGCNAStep {
   name: string
@@ -310,6 +311,31 @@ export default function WGCNA() {
     }
   }, [pollTask])
 
+  // Handle params loaded from RDS
+  const handleParamsLoaded = useCallback(
+    (loadedParams: Record<string, unknown>) => {
+      if (loadedParams.cutHeight) setCutHeight(loadedParams.cutHeight as number)
+      if (loadedParams.abline) setAbline(loadedParams.abline as number)
+      if (loadedParams.mergeCutHeight) setMergeCutHeight(loadedParams.mergeCutHeight as number)
+      if (loadedParams.nSelect) setNSelect(loadedParams.nSelect as number)
+    },
+    []
+  )
+
+  // Handle SVG loaded from RDS
+  const handleSvgLoaded = useCallback((svgContent: string) => {
+    // Store SVG in the last completed step
+    setSteps((prev) => {
+      const lastDone = [...prev].reverse().find((s) => s.status === 'done')
+      if (lastDone) {
+        return prev.map((s) =>
+          s.name === lastDone.name ? { ...s, svg: svgContent } : s
+        )
+      }
+      return prev
+    })
+  }, [])
+
   // Check if can run
   const canRun = dataSource === 'workspace' ? hasNormData : exprFile !== null
 
@@ -540,6 +566,21 @@ export default function WGCNA() {
           导出 RData
         </button>
       </div>
+
+      {/* Plot Save/Load */}
+      <PlotSaveLoad
+        module="wgcna"
+        params={{
+          cutHeight,
+          abline,
+          mergeCutHeight,
+          nSelect,
+        }}
+        plotData={steps.some((s) => s.status === 'done') ? { steps: steps.filter((s) => s.status === 'done') } : null}
+        disabled={!steps.some((s) => s.status === 'done')}
+        onParamsLoaded={handleParamsLoaded}
+        onSvgLoaded={handleSvgLoaded}
+      />
 
       {/* Error display */}
       {error && (

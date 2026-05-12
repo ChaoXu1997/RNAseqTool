@@ -12,6 +12,8 @@ vi.mock('../api/client', () => ({
   getTaskStatus: vi.fn(),
   startAnalysis: vi.fn(),
   exportGeneTrendRData: vi.fn(),
+  savePlotRds: vi.fn(),
+  loadPlotRds: vi.fn(),
   default: {
     get: vi.fn(),
     post: vi.fn(),
@@ -269,5 +271,17 @@ describe('GeneTrend Page', () => {
     expect(exportButton).toBeInTheDocument()
     // Export button should be disabled when no results
     expect(exportButton).toBeDisabled()
+  })
+
+  it('renders PlotSaveLoad component', () => {
+    render(<GeneTrend />)
+    expect(screen.getByText('保存绘图 (RDS)')).toBeInTheDocument()
+    expect(screen.getByText('加载绘图 (RDS)')).toBeInTheDocument()
+  })
+
+  it('PlotSaveLoad save button is disabled when no results', () => {
+    render(<GeneTrend />)
+    const saveBtn = screen.getByText('保存绘图 (RDS)')
+    expect(saveBtn).toBeDisabled()
   })
 })

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useWorkspaceStore } from '../stores/workspace'
 import { runGeneTrend, getGeneTrendPlot, getTaskStatus } from '../api/client'
+import { PlotSaveLoad } from '../components/PlotSaveLoad'
 
 interface DESeq2ContrastResult {
   contrasts: Record<string, Record<string, unknown>[]>
@@ -273,6 +274,24 @@ export default function GeneTrend() {
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
+  }, [])
+
+  // Handle params loaded from RDS
+  const handleParamsLoaded = useCallback(
+    (loadedParams: Record<string, unknown>) => {
+      if (loadedParams.pointSize) setPointSize(loadedParams.pointSize as number)
+      if (loadedParams.lineWidth) setLineWidth(loadedParams.lineWidth as number)
+      if (loadedParams.colorPalette) setColorPalette(loadedParams.colorPalette as keyof typeof COLOR_PALETTES)
+      if (loadedParams.mm_colr_low) setMmLow(loadedParams.mm_colr_low as string)
+      if (loadedParams.mm_colr_high) setMmHigh(loadedParams.mm_colr_high as string)
+      if (loadedParams.mm_midpoint) setMmMidpoint(loadedParams.mm_midpoint as number)
+    },
+    []
+  )
+
+  // Handle SVG loaded from RDS
+  const handleSvgLoaded = useCallback((svgContent: string) => {
+    setAllPlotSvg(svgContent)
   }, [])
 
   return (
@@ -632,6 +651,8 @@ export default function GeneTrend() {
                   <p className="text-gray-500">运行分析后显示趋势图</p>
                 </div>
               )}
+
+
             </div>
 
             {/* Single cluster plot */}
@@ -682,6 +703,23 @@ export default function GeneTrend() {
             运行 Mfuzz 聚类分析后显示结果
           </div>
         )}
+
+        {/* Plot Save/Load */}
+        <PlotSaveLoad
+          module="genetrend"
+          params={{
+            pointSize,
+            lineWidth,
+            colorPalette,
+            mm_colr_low: mmLow,
+            mm_colr_high: mmHigh,
+            mm_midpoint: mmMidpoint,
+          }}
+          plotData={clusterResult ? { result: clusterResult } : null}
+          disabled={!clusterResult}
+          onParamsLoaded={handleParamsLoaded}
+          onSvgLoaded={handleSvgLoaded}
+        />
       </div>
     </div>
   )
