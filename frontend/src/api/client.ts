@@ -23,7 +23,13 @@ export async function loadDemoData(type: string) {
 // Analysis endpoints (async polling)
 export async function startAnalysis(module: string, params: Record<string, unknown>) {
   const { data } = await api.post(`/analyze/${module}`, params)
-  return data.task_id as string
+  return data.taskId as string
+}
+
+// Get available contrast pairs from sample info
+export async function getContrastPairs(sampleInfo: Record<string, unknown>) {
+  const { data } = await api.post('/deseq2/contrasts', { sampleInfo })
+  return data as { status: string; pairs: Array<{ group1: string; group2: string }>; groups: string[] }
 }
 
 export async function getTaskStatus(taskId: string) {
