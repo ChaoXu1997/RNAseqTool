@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
+import WorkspaceManager from './WorkspaceManager'
 
 const navItems = [
   { path: '/', label: 'Home', icon: '🏠' },
@@ -16,9 +17,9 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen">
-      <aside className="w-56 bg-gray-50 border-r border-gray-200 p-4">
+      <aside className="w-56 bg-gray-50 border-r border-gray-200 p-4 flex flex-col">
         <h1 className="text-lg font-bold mb-6">RNAseqTool</h1>
-        <nav className="space-y-1">
+        <nav className="space-y-1 flex-1">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -33,6 +34,9 @@ export default function Layout() {
             </Link>
           ))}
         </nav>
+        <div className="mt-4">
+          <WorkspaceManager />
+        </div>
       </aside>
       <main className="flex-1 overflow-auto p-6">
         <Outlet />

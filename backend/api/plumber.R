@@ -13,6 +13,8 @@ source("R/fct_msigdbr.R")
 source("R/fct_gsea.R")
 source("R/fct_genetrend.R")
 source("R/fct_wgcna.R")
+source("R/fct_workspace.R")
+source("R/fct_plot_save.R")
 
 # Path to data directory
 DATA_DIR <- "data"
@@ -604,18 +606,59 @@ function(res) {
 
 #* Save workspace
 #* @post /api/workspace/save
+#* @serializer contentType list(type="application/octet-stream")
 function(req, res) {
-  # TODO: implement workspace save
-  res$status <- 200
-  list(status = "ok")
+  tryCatch({
+    # Serialize workspace
+    raw_bytes <- serialize_workspace(workspace)
+    
+    # Return as binary
+    res$setHeader("Content-Disposition", "attachment; filename=workspace.rds")
+    return(raw_bytes)
+  }, error = function(e) {
+    res$status <- 500
+    return(list(error = paste("Failed to save workspace:", e$message)))
+  })
 }
 
 #* Load workspace
 #* @post /api/workspace/load
 #* @parser multiPart
+#* @serializer json
 function(req, res) {
-  # TODO: implement workspace load
-  list(status = "ok")
+  tryCatch({
+    # Get uploaded file
+    if (is.null(req$files) || length(req$files) == 0) {
+      res$status <- 400
+      return(list(error = "No file uploaded"))
+    }
+    
+    file_info <- req$files[[1]]
+    file_path <- file_info$datapath
+    
+    # Read uploaded file as raw bytes
+    raw_bytes <- readBin(file_path, "raw", n = file.info(file_path)$size)
+    
+    # Deserialize into workspace
+    result <- deserialize_workspace(raw_bytes, workspace)
+    
+    return(result)
+  }, error = function(e) {
+    res$status <- 500
+    return(list(error = paste("Failed to load workspace:", e$message)))
+  })
+}
+
+#* Get workspace status
+#* @get /api/workspace/status
+#* @serializer json
+function(req, res) {
+  steps <- get_workspace_status(workspace)
+  list(
+    status = "ok",
+    steps = steps,
+    version = WORKSPACE_VERSION
+  )
 }
 
 #* GSEA analysis
@@ -1257,8 +1300,146 @@ function(req, res) {
   })
 }
 
-#* Export plot
-#* @post /api/export/<format>
+#' Save plot as RDS (ggplot object + parameters)
+#' @post /api/plot/save
+#' @serializer json
+function(req, res) {
+  tryCatch({
+    body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
+
+    if (is.null(body$module)) {
+      res$status <- 400
+      return(list(error = "Missing 'module' parameter"))
+    }
+
+    module <- body$module
+    params <- body$params %||% list()
+    plot_data <- body$plot_data %||% list()
+
+    # Build ggplot object based on module
+    plot_obj <- NULL
+
+    if (module == "volcano") {
+      if (is.null(plot_data$degs)) {
+        res$status <- 400
+        return(list(error = "Missing 'degs' data for volcano"))
+      }
+      degs_df <- as.data.frame(plot_data$degs)
+      title <- params$title %||% "Volcano Plot"
+      colr_up <- params$colr_up %||% "#FC4E2A"
+      colr_down <- params$colr_down %||% "#4393C3"
+      colr_not <- params$colr_not %||% "#00000033"
+      xlim <- params$xlim %||% c(-10, 10)
+      xbr <- params$xbr %||% 5
+      if (is.list(xlim)) xlim <- unlist(xlim)
+
+      plot_obj <- volcano_plot_func(
+        DEGs = degs_df, title = title,
+        colr_up = colr_up, colr_down = colr_down, colr_not = colr_not,
+        xlim = xlim, xbr = xbr
+      )
+
+    } else if (module == "pca") {
+      if (is.null(plot_data$coordinates)) {
+        res$status <- 400
+        return(list(error = "Missing 'coordinates' data for pca"))
+      }
+      coords <- as.data.frame(plot_data$coordinates)
+      variance <- plot_data$variance_explained
+      if (!is.null(variance)) variance <- unlist(variance)
+
+      title <- params$title %||% "Principal Component Analysis"
+      colr <- params$colors %||% c("red", "green", "yellow", "purple")
+      addEllipses <- params$ellipse %||% TRUE
+      addLabels <- params$labels %||% TRUE
+      dotSize <- params$dotSize %||% 2
+      xlim <- params$xlim %||% c(-150, 150)
+      ylim <- params$ylim %||% c(-150, 150)
+      if (is.list(xlim)) xlim <- unlist(xlim)
+      if (is.list(ylim)) ylim <- unlist(ylim)
+
+      plot_obj <- pca_plot(
+        coordinates = coords, title = title, colr = colr,
+        addEllipses = addEllipses, addLabels = addLabels,
+        dotSize = dotSize, xlim = xlim, ylim = ylim,
+        variance_explained = variance
+      )
+
+    } else if (module == "enrich") {
+      if (is.null(plot_data$results)) {
+        res$status <- 400
+        return(list(error = "Missing 'results' data for enrich"))
+      }
+      eRes <- as.data.frame(plot_data$results)
+      plot_obj <- enrich_plot_func(eRes,
+        showCategory = params$showCategory %||% 10,
+        title = params$title %||% "Enrichment Analysis"
+      )
+
+    } else if (module == "gsea") {
+      # For GSEA, we save params only - plot requires the full GSEA object
+      plot_obj <- ggplot2::ggplot() + ggplot2::ggtitle(params$title %||% "GSEA Plot")
+
+    } else if (module == "genetrend") {
+      plot_obj <- ggplot2::ggplot() + ggplot2::ggtitle(params$title %||% "GeneTrend Plot")
+
+    } else if (module == "wgcna") {
+      plot_obj <- ggplot2::ggplot() + ggplot2::ggtitle(params$title %||% "WGCNA Plot")
+
+    } else {
+      res$status <- 400
+      return(list(error = paste("Unknown module:", module)))
+    }
+
+    # Save to RDS
+    raw_bytes <- save_plot_rds(module, plot_obj, params)
+
+    # Encode as base64
+    b64 <- base64enc::base64encode(raw_bytes)
+
+    list(status = "ok", data = b64, filename = paste0(module, "_plot.rds"))
+  }, error = function(e) {
+    res$status <- 500
+    list(error = paste("Plot save failed:", e$message))
+  })
+}
+
+#' Load plot from RDS file
+#' @post /api/plot/load
+#' @parser multiPart
+#' @serializer json
+function(req, res) {
+  tryCatch({
+    # Get uploaded file
+    if (is.null(req$files) || length(req$files) == 0) {
+      res$status <- 400
+      return(list(error = "No file uploaded"))
+    }
+
+    file_info <- req$files[[1]]
+    file_path <- file_info$datapath
+
+    # Read uploaded file as raw bytes
+    raw_bytes <- readBin(file_path, "raw", n = file.info(file_path)$size)
+
+    # Load the RDS
+    result <- load_plot_rds(raw_bytes)
+
+    # Return params and SVG (not the ggplot object itself)
+    list(
+      status = "ok",
+      module = result$module,
+      params = result$params,
+      svg = result$svg
+    )
+  }, error = function(e) {
+    res$status <- 500
+    list(error = paste("Plot load failed:", e$message))
+  })
+}
+
+#' Export plot
+#' @post /api/export/<format>
 function(req, format) {
   # TODO: implement export
   list(status = "ok", format = format)

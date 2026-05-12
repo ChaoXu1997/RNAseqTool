@@ -32,12 +32,18 @@ interface WorkspaceState {
   // Plot params per module
   plotParams: Record<string, PlotParams>
 
+  // Workspace status from backend
+  completedSteps: string[]
+  workspaceVersion: string
+
   // Actions
   setExprRaw: (data: DataFile | null) => void
   setExprNorm: (data: DataFile | null) => void
   setSampleInfo: (data: DataFile | null) => void
   setAnalysisResult: (module: string, result: AnalysisResult) => void
   setPlotParams: (module: string, params: PlotParams) => void
+  setCompletedSteps: (steps: string[]) => void
+  setWorkspaceVersion: (version: string) => void
   reset: () => void
 }
 
@@ -48,6 +54,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   deseq2Result: null,
   pcaResult: null,
   plotParams: {},
+  completedSteps: [],
+  workspaceVersion: '',
 
   setExprRaw: (data) => set({ exprRaw: data }),
   setExprNorm: (data) => set({ exprNorm: data }),
@@ -63,6 +71,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       plotParams: { ...state.plotParams, [module]: params },
     })),
 
+  setCompletedSteps: (steps) => set({ completedSteps: steps }),
+  setWorkspaceVersion: (version) => set({ workspaceVersion: version }),
+
   reset: () =>
     set({
       exprRaw: null,
@@ -71,5 +82,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       deseq2Result: null,
       pcaResult: null,
       plotParams: {},
+      completedSteps: [],
+      workspaceVersion: '',
     }),
 }))

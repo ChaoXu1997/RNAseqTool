@@ -53,7 +53,12 @@ export async function loadWorkspace(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   const { data } = await api.post('/workspace/load', formData)
-  return data
+  return data as { status: string; message?: string; steps: string[] }
+}
+
+export async function getWorkspaceStatus() {
+  const { data } = await api.get('/workspace/status')
+  return data as { status: string; steps: string[]; version: string }
 }
 
 // Export
@@ -151,6 +156,33 @@ export async function getGeneTrendPlot(params: {
 export async function exportGeneTrendRData() {
   const { data } = await api.post('/export/genetrend/rdata', {})
   return data as { status: string; data: string; filename: string }
+}
+
+// Save plot as RDS (ggplot object + params)
+export async function savePlotRds(
+  module: string,
+  params: Record<string, unknown>,
+  plotData: Record<string, unknown>
+) {
+  const { data } = await api.post('/plot/save', {
+    module,
+    params,
+    plot_data: plotData,
+  })
+  return data as { status: string; data: string; filename: string }
+}
+
+// Load plot from RDS file
+export async function loadPlotRds(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await api.post('/plot/load', formData)
+  return data as {
+    status: string
+    module: string
+    params: Record<string, unknown>
+    svg: string
+  }
 }
 
 // WGCNA analysis (multi-step)

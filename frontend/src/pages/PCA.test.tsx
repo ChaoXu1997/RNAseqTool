@@ -9,6 +9,8 @@ vi.mock('../api/client', () => ({
   getTaskStatus: vi.fn(),
   getPlot: vi.fn(),
   exportPlot: vi.fn(),
+  savePlotRds: vi.fn(),
+  loadPlotRds: vi.fn(),
 }))
 
 // Mock workspace store

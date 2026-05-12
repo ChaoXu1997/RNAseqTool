@@ -10,6 +10,8 @@ vi.mock('../api/client', () => ({
   runEnrich: vi.fn(),
   getDatabases: vi.fn(),
   getSpecies: vi.fn(),
+  savePlotRds: vi.fn(),
+  loadPlotRds: vi.fn(),
   default: {
     get: vi.fn(),
     post: vi.fn(),

@@ -8,6 +8,8 @@ vi.mock('../api/client', () => ({
   getPlot: vi.fn(),
   uploadFile: vi.fn(),
   exportPlot: vi.fn(),
+  savePlotRds: vi.fn(),
+  loadPlotRds: vi.fn(),
 }))
 
 // Mock workspace store - create a mutable state object

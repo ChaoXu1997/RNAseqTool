@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useWorkspaceStore } from '../stores/workspace'
 import { runEnrich, getPlot, getDatabases, getSpecies } from '../api/client'
+import { PlotSaveLoad } from '../components/PlotSaveLoad'
 
 const DEFAULT_DATABASES = [
   'C5:GO:BP',
@@ -289,6 +290,21 @@ export default function Enrich() {
     a.click()
     URL.revokeObjectURL(url)
   }, [svg, plotType])
+
+  // Handle params loaded from RDS
+  const handleParamsLoaded = useCallback(
+    (loadedParams: Record<string, unknown>) => {
+      if (loadedParams.title) setPlotTitle(loadedParams.title as string)
+      if (loadedParams.plot_type) setPlotType(loadedParams.plot_type as 'bar' | 'dot' | 'lollipop')
+      if (loadedParams.showCategory) setShowCategory(loadedParams.showCategory as number)
+    },
+    []
+  )
+
+  // Handle SVG loaded from RDS
+  const handleSvgLoaded = useCallback((svgContent: string) => {
+    setSvg(svgContent)
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -589,6 +605,16 @@ export default function Enrich() {
             导出 SVG
           </button>
         </div>
+
+        {/* Plot Save/Load */}
+        <PlotSaveLoad
+          module="enrich"
+          params={{ title: plotTitle, plot_type: plotType, showCategory }}
+          plotData={enrichResult ? { results: enrichResult } : null}
+          disabled={!enrichResult}
+          onParamsLoaded={handleParamsLoaded}
+          onSvgLoaded={handleSvgLoaded}
+        />
 
         {/* Plot display */}
         <div data-testid="enrich-plot-area" className="border border-gray-100 rounded p-4 min-h-[300px]">

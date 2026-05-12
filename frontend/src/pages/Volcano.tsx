@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { loadDemoData, getPlot, uploadFile } from '../api/client'
 import { useWorkspaceStore } from '../stores/workspace'
+import { PlotSaveLoad } from '../components/PlotSaveLoad'
 
 const DEFAULT_PARAMS = {
   title: 'Volcano Plot',
@@ -286,6 +287,28 @@ export default function Volcano() {
     }
   }, [degsData, params])
 
+  // Handle params loaded from RDS
+  const handleParamsLoaded = useCallback(
+    (loadedParams: Record<string, unknown>) => {
+      setParams((prev) => ({
+        ...prev,
+        title: (loadedParams.title as string) ?? prev.title,
+        colr_up: (loadedParams.colr_up as string) ?? prev.colr_up,
+        colr_down: (loadedParams.colr_down as string) ?? prev.colr_down,
+        colr_not: (loadedParams.colr_not as string) ?? prev.colr_not,
+        xlim_min: (loadedParams.xlim as number[] | undefined)?.[0] ?? prev.xlim_min,
+        xlim_max: (loadedParams.xlim as number[] | undefined)?.[1] ?? prev.xlim_max,
+        xbr: (loadedParams.xbr as number) ?? prev.xbr,
+      }))
+    },
+    []
+  )
+
+  // Handle SVG loaded from RDS
+  const handleSvgLoaded = useCallback((svgContent: string) => {
+    setSvg(svgContent)
+  }, [])
+
   // Get available contrasts
   const getContrasts = (): string[] => {
     if (!hasWorkspaceResults) return []
@@ -546,6 +569,21 @@ export default function Volcano() {
         >
           保存为 RData
         </button>
+        <PlotSaveLoad
+          module="volcano"
+          params={{
+            title: params.title,
+            colr_up: params.colr_up,
+            colr_down: params.colr_down,
+            colr_not: params.colr_not,
+            xlim: [params.xlim_min, params.xlim_max],
+            xbr: params.xbr,
+          }}
+          plotData={degsData ? { degs: degsData } : null}
+          disabled={!degsData}
+          onParamsLoaded={handleParamsLoaded}
+          onSvgLoaded={handleSvgLoaded}
+        />
       </div>
     </div>
   )

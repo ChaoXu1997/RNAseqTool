@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { loadDemoData, startAnalysis, getTaskStatus, getPlot, uploadFile } from '../api/client'
 import { useWorkspaceStore, type DataFile } from '../stores/workspace'
+import { PlotSaveLoad } from '../components/PlotSaveLoad'
 
 const DEFAULT_PARAMS = {
   title: 'Principal Component Analysis',
@@ -270,6 +271,28 @@ export default function PCA() {
     }
   }, [pcaResult])
 
+  // Handle params loaded from RDS
+  const handleParamsLoaded = useCallback(
+    (loadedParams: Record<string, unknown>) => {
+      setParams((prev) => ({
+        ...prev,
+        title: (loadedParams.title as string) ?? prev.title,
+        colors: (loadedParams.colors as string[]) ?? prev.colors,
+        ellipse: (loadedParams.ellipse as boolean) ?? prev.ellipse,
+        labels: (loadedParams.labels as boolean) ?? prev.labels,
+        dotSize: (loadedParams.dotSize as number) ?? prev.dotSize,
+        xlim: (loadedParams.xlim as [number, number]) ?? prev.xlim,
+        ylim: (loadedParams.ylim as [number, number]) ?? prev.ylim,
+      }))
+    },
+    []
+  )
+
+  // Handle SVG loaded from RDS
+  const handleSvgLoaded = useCallback((svgContent: string) => {
+    setSvg(svgContent)
+  }, [])
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">PCA 分析</h2>
@@ -460,6 +483,18 @@ export default function PCA() {
         >
           下载坐标数据 (CSV)
         </button>
+        <PlotSaveLoad
+          module="pca"
+          params={params}
+          plotData={
+            pcaResult?.data
+              ? (pcaResult.data as Record<string, unknown>)
+              : null
+          }
+          disabled={!pcaResult?.data}
+          onParamsLoaded={handleParamsLoaded}
+          onSvgLoaded={handleSvgLoaded}
+        />
       </div>
     </div>
   )
