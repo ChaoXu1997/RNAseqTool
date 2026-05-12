@@ -6,7 +6,7 @@ const api = axios.create({
 })
 
 // Upload data file
-export async function uploadFile(file: File, type: 'expr' | 'sampleInfo' | 'deseq2' | 'genelist' | 'trait') {
+export async function uploadFile(file: File, type: string) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('type', type)
