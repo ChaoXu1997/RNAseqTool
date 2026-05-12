@@ -62,4 +62,122 @@ export async function exportPlot(module: string, format: 'svg' | 'pdf' | 'tif' |
   return data as Blob
 }
 
+// Enrichment analysis
+export async function runEnrich(params: {
+  genes?: string[]
+  source?: 'deseq2'
+  contrast?: string
+  direction?: 'Up' | 'Down' | 'All'
+  database: string
+  species?: string
+  gene_type?: 'symbol' | 'entrezid' | 'ensembl'
+  p_cutoff?: number
+}) {
+  const { data } = await api.post('/analyze/enrich', params)
+  return data as {
+    status: string
+    message?: string
+    results?: Record<string, unknown[]>
+    gene_count?: number
+    database?: string
+    species?: string
+  }
+}
+
+// GSEA analysis
+export async function runGSEA(params: {
+  geneList?: Record<string, number>
+  source?: 'deseq2'
+  contrast?: string
+  database: string
+  species?: string
+  gene_type?: 'symbol' | 'entrezid' | 'ensembl'
+  pvalue?: number
+  pAdjustMethod?: 'BH' | 'bonferroni' | 'holm' | 'hochberg' | 'hommel' | 'BY' | 'fdr' | 'none'
+}) {
+  const { data } = await api.post('/analyze/gsea', params)
+  return data as {
+    status: string
+    message?: string
+    result?: Record<string, unknown[]>
+    gene_count?: number
+    database?: string
+    species?: string
+    parameters?: {
+      pvalue: number
+      pAdjustMethod: string
+    }
+  }
+}
+
+// Get available databases
+export async function getDatabases() {
+  const { data } = await api.get('/databases')
+  return data as { status: string; databases: string[] }
+}
+
+// Get available species
+export async function getSpecies() {
+  const { data } = await api.get('/species')
+  return data as { status: string; species: string[] }
+}
+
+// GeneTrend Mfuzz analysis
+export async function runGeneTrend(params: {
+  norm: Record<string, unknown>
+  sampleInfo: Record<string, unknown>
+  c_value?: number
+  filterNA?: number
+  fillNA?: 'mean' | 'median' | 'knn'
+  filterSD?: number
+}) {
+  const { data } = await api.post('/analyze/genetrend', params)
+  return data as {
+    taskId: string
+  }
+}
+
+// GeneTrend plot
+export async function getGeneTrendPlot(params: {
+  plotType: 'all' | 'single'
+  clusterNum?: number
+  params?: Record<string, unknown>
+}) {
+  const { data } = await api.post('/plot/genetrend', params)
+  return data as { svg: string }
+}
+
+// Export GeneTrend RData
+export async function exportGeneTrendRData() {
+  const { data } = await api.post('/export/genetrend/rdata', {})
+  return data as { status: string; data: string; filename: string }
+}
+
+// WGCNA analysis (multi-step)
+export async function runWGCNA(params: {
+  step: 'sampletree' | 'power' | 'network' | 'module_trait' | 'mm_gs' | 'tom' | 'export'
+  expr?: Record<string, unknown>
+  trait?: Record<string, unknown>
+  cutHeight?: number
+  abline?: number
+  power?: number
+  mergeCutHeight?: number
+  module?: string
+  nSelect?: number
+}) {
+  const { data } = await api.post('/analyze/wgcna', params)
+  return data as { taskId: string }
+}
+
+// WGCNA plot (re-render specific step)
+export async function getWGCNAPlot(params: {
+  step: 'mm_gs' | 'tom'
+  module?: string
+  trait?: string
+  nSelect?: number
+}) {
+  const { data } = await api.post('/plot/wgcna', params)
+  return data as { svg: string }
+}
+
 export default api
