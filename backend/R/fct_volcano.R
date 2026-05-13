@@ -22,19 +22,25 @@ volcano_plot_func <- function(DEGs,
                               colr_not = "#00000033",
                               xlim = c(-10, 10),
                               xbr = 5) {
+  # Ensure correct column types
+  DEGs$log2FoldChange <- as.numeric(DEGs$log2FoldChange)
+  DEGs$padj <- as.numeric(DEGs$padj)
+  
   # Count Up/Down genes
   change_table <- table(DEGs$change)
   Down <- sum(change_table[names(change_table) == "Down"])
   Up <- sum(change_table[names(change_table) == "Up"])
   text <- stringr::str_glue("Down:{Down} Up:{Up} \n|log2FC|>=1, p-adj<=0.05")
 
-  # Filter out infinite padj values
+  # Filter out infinite/NA padj values
   deg <- DEGs %>%
     as.data.frame() %>%
-    dplyr::filter(-log10(padj) != Inf)
+    dplyr::filter(!is.na(padj), is.finite(-log10(padj)))
 
-  # Calculate y-axis breaks
-  break_y <- max(-log10(deg$padj)) %/% 6
+  # Calculate y-axis breaks with safety check
+  max_log_padj <- max(-log10(deg$padj), na.rm = TRUE)
+  if (!is.finite(max_log_padj) || max_log_padj <= 0) max_log_padj <- 10
+  break_y <- max(1, max_log_padj %/% 6)
   max_y <- break_y * 7
 
   # Build plot
@@ -90,6 +96,10 @@ render_volcano_svg <- function(DEGs, params) {
   colr_not <- params$colr_not %||% "#00000033"
   xlim <- params$xlim %||% c(-10, 10)
   xbr <- params$xbr %||% 5
+
+  # Unlist if coming from JSON (list -> numeric vector)
+  if (is.list(xlim)) xlim <- unlist(xlim)
+  xlim <- as.numeric(xlim)
 
   # Convert to numeric if xlim is a list
   if (is.list(xlim)) {

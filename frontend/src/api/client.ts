@@ -39,8 +39,12 @@ export async function getTaskStatus(taskId: string) {
 
 // Plot endpoints
 export async function getPlot(module: string, params: Record<string, unknown>) {
-  const { data } = await api.post(`/plot/${module}`, params, { responseType: 'text' })
-  return data as string // SVG content
+  const { data } = await api.post(`/plot/${module}`, params)
+  // Backend returns { svg: string } - extract the SVG content
+  if (typeof data === 'object' && data !== null && 'svg' in data) {
+    return data.svg as string
+  }
+  return data as string
 }
 
 // Workspace

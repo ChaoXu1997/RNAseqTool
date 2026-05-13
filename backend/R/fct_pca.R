@@ -67,11 +67,13 @@ pca_plot <- function(
   xlab <- "PC1"
   ylab <- "PC2"
   if (!is.null(variance_explained)) {
-    if ("PC1" %in% names(variance_explained)) {
-      xlab <- sprintf("PC1 (%.1f%%)", variance_explained["PC1"] * 100)
+    # Ensure it's a named numeric vector, not a list
+    ve <- unlist(variance_explained)
+    if ("PC1" %in% names(ve)) {
+      xlab <- sprintf("PC1 (%.1f%%)", as.numeric(ve[["PC1"]]) * 100)
     }
-    if ("PC2" %in% names(variance_explained)) {
-      ylab <- sprintf("PC2 (%.1f%%)", variance_explained["PC2"] * 100)
+    if ("PC2" %in% names(ve)) {
+      ylab <- sprintf("PC2 (%.1f%%)", as.numeric(ve[["PC2"]]) * 100)
     }
   }
 
@@ -117,6 +119,12 @@ render_pca_svg <- function(coordinates, params, variance_explained = NULL) {
   dotSize <- params$dotSize %||% 2
   xlim <- params$xlim %||% c(-150, 150)
   ylim <- params$ylim %||% c(-150, 150)
+
+  # Unlist if coming from JSON (list -> numeric vector)
+  if (is.list(xlim)) xlim <- unlist(xlim)
+  if (is.list(ylim)) ylim <- unlist(ylim)
+  xlim <- as.numeric(xlim)
+  ylim <- as.numeric(ylim)
 
   p <- pca_plot(
     coordinates = coordinates,

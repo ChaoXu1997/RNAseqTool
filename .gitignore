@@ -49,4 +49,5 @@ vignettes/*.pdf
 *.knit.md
 
 # R Environment Variables
-.Renviron
+.Renvirondev-logs/
+dev-pids/

@@ -1,136 +1,144 @@
-## RNAseqTool: A Shiny App for Interactive RNAseq Analysis and Visualization  
+# RNAseqTool
 
-RNAseqTool provides an interactive and user-friendly method for users to analyze RNAseq data, which could be a great solution for RNAseq data analysis and visualization. Here are some potential features that the Shiny App could include:<img src="inst/app/www/favicon.png" align="right" height="250" />
+一个交互式 RNA-seq 数据分析可视化工具，面向湿实验室研究人员，零配置双击即用。
 
-- Interactive visualization
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-- [Principal component analysis (PCA)](#h1)
+## 功能模块
 
-- [Differential gene expression analysis](#h2)
+| 模块 | 功能 | 输入 |
+|------|------|------|
+| **PCA** | 主成分分析，检测离群样本和批次效应 | norm 矩阵 + sampleInfo |
+| **DESeq2** | 差异基因表达分析（核心枢纽） | raw counts + sampleInfo |
+| **Volcano** | 火山图可视化差异表达结果 | DESeq2 结果 |
+| **Enrich** | GO/KEGG 富集分析（ORA），支持 20 个物种、23 个数据库 | DESeq2 结果 或 基因列表 |
+| **GSEA** | 基因集富集分析 | DESeq2 结果(geneList) 或 直接上传 |
+| **GeneTrend** | 基因趋势分析（Mfuzz 模糊聚类） | norm 矩阵 + sampleInfo |
+| **WGCNA** | 加权基因共表达网络分析 | norm 矩阵 + sampleInfo + trait |
 
-- [Volcano plot](#h3)
-
-- Gene enrichment analysis based on databases such as GO and KEGG
-  
-  *Supports 20 species, 23 databases*
-  
-  - [Over Representation Analysis (ORA) ](#h4)
-  - [Gene Set Enrichment Analysis (GSEA) ](#h5)
-  
-- [Gene trend analysis](#h6)
-
-- [Weighted correlation network analysis (WGCNA) ](#h7)
-
-- Data Export: PDF & XLSX
-
-## Installation
-
-You can install the development version of RNAseqTool from [GitHub](https://github.com/) with:
-
-```R
-# Install devtools
-install.packages("devtools")
-# Install BiocManager
-install.packages("BiocManager")
-
-# Install dependent R packages from Bioconductor
-pkgs <- c('clusterProfiler', 'DESeq2', 'Mfuzz')
-lapply(pkgs,function(pkg){
-  if (!require(pkg, quietly = TRUE))
-    BiocManager::install(pkg,update = F)
-})
-# Install dependent R packages from GitHub
-devtools::install_github("vqv/ggbiplot")
-devtools::install_github("junjunlab/GseaVis")
-
-# Install RNAseqTool
-devtools::install_github("ChaoXu1997/RNAseqTool")
-# Run ShinyApp
-RNAseqTool::run_app()
-# Remove RNAseqTool
-remove.packages("RNAseqTool")
-```
-
-## Deploy to shiny server
-
-```R
-
+## 模块依赖关系
 
 ```
+PCA          ← norm矩阵 + sampleInfo（独立）
+DESeq2       ← raw counts + sampleInfo（核心枢纽）
+  ├── Volcano   ← DESeq2 结果
+  ├── Enrich    ← DESeq2 结果(Up/Down 基因) 或直接粘贴基因列表
+  ├── GSEA      ← DESeq2 结果(geneList) 或直接上传
+  ├── GeneTrend ← norm矩阵 + sampleInfo + DESeq2 结果(筛选基因)
+  └── WGCNA     ← norm矩阵 + sampleInfo + trait + DESeq2 结果(筛选基因)
+```
 
- 
+## 架构
 
-## <span id = "h1">Principal Component Analysis (PCA)</span>
+```
+前端 (React + Vite)  ←→  后端 (R plumber API)  ←→  启动器 (Go)
+     SPA 渲染              计算 + 出图(SVG)          检测 R + 启动
+```
 
-> **Analysis:**  prcomp {stats};  **Visualization:** {ggplot2 }
+- 前端不做计算，后端 ggplot2 出 SVG → 前端 `<img>` 嵌入
+- 长时任务异步轮询 (POST → taskId → 轮询 GET /api/task/:id)
+- 绘图参数可实时调整，修改后重新出图
+- Workspace 机制保存/加载分析状态（RDS 格式）
+- 支持导出 SVG/PNG/PDF/TIF + ggplot RData
 
-Principal Component Analysis (PCA) is a widely used technique in RNA sequencing (RNAseq) data analysis. It can be useful in identifying outliers or batch effects that may be present in the data. Outliers are samples that have unusual expression patterns compared to other samples, while batch effects are systematic variations in gene expression that are introduced during the experimental or sequencing process. Overall, PCA is a powerful tool for visualizing and analyzing RNAseq data, and it can help to identify potential issues that may need to be addressed in downstream analyses.
+## 快速开始
 
+### 一键启动（推荐）
 
+```bash
+chmod +x dev.sh
+./dev.sh
+```
 
-![PCA](README/TIF/01_PCA.gif)
+浏览器打开 http://localhost:3000 即可使用。
 
-## <span id = "h2">Differential Gene Expression Analysis</span>
+其他命令：
 
-> **Analysis:** {DEseq2}
+```bash
+./dev.sh --stop       # 停止全部服务
+./dev.sh --backend    # 只启动后端
+./dev.sh --frontend   # 只启动前端
+./dev.sh --status     # 查看服务状态
+./dev.sh --logs       # 实时查看日志
+```
 
-Differential gene expression analysis is a common task in RNA sequencing (RNAseq) data analysis, and DESeq2 is a widely used software package for this purpose.
+### 手动启动
 
-![PCA](README/TIF/02_DEseq2.gif)
+```bash
+# 后端（需要 R >= 4.1）
+cd backend
+Rscript run.R         # http://localhost:8000
 
+# 前端（需要 Node.js >= 18）
+cd frontend
+npm install
+npx vite --port 3000  # http://localhost:3000
+```
 
+## 数据格式
 
+| 类型 | 格式 |
+|------|------|
+| 表达矩阵(raw) | CSV/XLSX: Gene, Sample1, Sample2, ... (整数) |
+| 表达矩阵(norm) | CSV/XLSX: Gene, Sample1, Sample2, ... (TPM/FPKM/CPM) |
+| 样本信息 | CSV/XLSX: Sample, Group, ... |
+| DESeq2 结果 | Gene, baseMean, log2FoldChange, lfcSE, stat, pvalue, padj, change |
+| GSEA 基因列表 | Gene, log2FoldChange (降序) |
+| WGCNA 性状数据 | Sample, trait1, trait2, ... |
 
+## 示例数据
 
-## <span id = "h3">Volcano Plot</span>
+项目内置示例数据（`backend/data/` 目录），点击界面"加载示例数据"按钮即可加载测试。
 
-> **Visualization:** {ggplot2}
+## 构建桌面应用
 
-A volcano plot is a commonly used graphical tool for visualizing the results of differential gene expression analysis. It displays the log2 fold change (log2FC) on the x-axis and  -log10(adj.p-value) on the y-axis. volcano plots are a powerful and commonly used tool for visualizing the results of differential gene expression analysis and can help researchers to identify key genes and pathways that are affected by changes in gene expression.
+```bash
+chmod +x build.sh
+./build.sh
+```
 
-![PCA](README/TIF/03_Volcano.gif)
+产物在 `dist/` 目录下，包含 Windows/macOS/Linux 三平台安装包。
 
+## 目录结构
 
+```
+RNAseqTool/
+├── dev.sh              # 开发一键启动脚本
+├── build.sh            # 多平台构建脚本
+├── frontend/           # React + Vite + Tailwind CSS + shadcn/ui
+│   ├── src/
+│   │   ├── pages/      # 各分析模块页面
+│   │   ├── components/ # 通用组件（文件上传、数据表格、参数面板）
+│   │   ├── api/        # API 调用封装
+│   │   └── stores/     # Zustand 状态管理
+│   └── package.json
+├── backend/            # R 后端
+│   ├── R/              # 分析函数 (fct_*.R)
+│   ├── api/            # plumber API 路由
+│   ├── data/           # 示例数据 (.rda)
+│   └── DESCRIPTION     # R 包依赖
+├── launcher/           # Go 启动器
+│   └── main.go
+└── renv.lock           # R 依赖锁文件
+```
 
-## <span id = "h4">Over Representation Analysis (ORA) </span>
+## R 依赖
 
-> **Analysis:** enricher {clusterProfiler}; **Visualization:** {ggplot2}
+主要 R 包（通过 BiocManager 安装）：
 
-Gene enrichment analysis can help to identify the key biological processes and pathways that are affected by changes in gene expression, and can provide insights into the underlying mechanisms of disease or cellular processes. It can also be used to validate results from differential gene expression analysis and to generate new hypotheses for further experimental validation. ORA involves comparing a set of differentially expressed genes to a database of known pathways or functional annotations and identifying those that are significantly overrepresented in the gene set. The output of gene enrichment analysis typically includes a list of enriched pathways or functional categories, along with statistical measures such as p-values or false discovery rates (FDRs). 
+| 包 | 用途 |
+|----|------|
+| plumber | REST API 框架 |
+| DESeq2 | 差异表达分析 |
+| clusterProfiler | 富集分析 |
+| enrichplot | 富集分析可视化 |
+| msigdbr | MSigDB 基因集 |
+| Mfuzz | 模糊聚类趋势分析 |
+| WGCNA | 共表达网络分析 |
+| ggplot2, ggrepel | 绑图引擎 |
 
+详见 [INSTALL.md](INSTALL.md)。
 
+## 许可证
 
-![PCA](README/TIF/04_normEnrich.gif)
-
-
-
-## <span id = "h5">Gene Set Enrichment Analysis (GSEA) </span>
-
-> **Analysis:** GSEA {clusterProfiler}; **Visualization:** {GseaVis}; **Database:** {msigdbr}
-
-GSEA can be applied to a wide variety of genomic data, including gene expression, copy number variation, and DNA methylation data, and can be used to identify pathways or biological processes that are differentially regulated between two groups of samples. GSEA involves the comparison of the expression of a pre-defined set of genes (a gene set) between two groups of samples, such as disease vs. healthy, or treatment vs. control. It has been widely used in biomedical research to uncover the underlying biological mechanisms involved in diseases and drug responses, and to identify potential biomarkers and therapeutic targets.
-
-![PCA](README/TIF/05_GSEA.gif)
-
-## <span id = "h6">Gene Trend Analysis</span>
-
-> **Analysis:** {Mfuzz}; **Visualization:** {ggplot2} **Database:** {msigdbr}
-
-Gene trend analysis is a method for identifying genes that have similar expression patterns across different experimental conditions. This type of analysis is particularly useful for identifying genes that are involved in common biological pathways or processes. One commonly used method for gene trend analysis is fuzzy clustering, which is implemented in the Mfuzz package in R. Fuzzy clustering allows genes to belong to more than one cluster, which can be useful for identifying genes that have complex or overlapping expression patterns. Overall, gene trend analysis is a powerful tool for identifying genes that are involved in common biological pathways or processes. By identifying these genes, researchers can gain insight into the underlying mechanisms of complex diseases and develop new therapeutic targets.
-
-
-
-![PCA](README/TIF/06_geneTrend.gif)
-
-## <span id = "h7">WGCNA Analysis</span>
-
-> **Analysis & Visualization:** {WGCNA}
-
-Weighted Gene Co-expression Network Analysis (WGCNA) is a powerful systems biology approach that can be used to identify co-expressed genes and their relationships with clinical or phenotypic traits. It is implemented in R and requires a set of gene expression data and sample information, such as clinical or phenotypic traits.
-
-![PCA](README/TIF/07_WGCNA.gif)
-
-
-
-
-
+MIT License — 详见 [LICENSE](LICENSE)。

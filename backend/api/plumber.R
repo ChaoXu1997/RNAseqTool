@@ -3,32 +3,45 @@
 
 library(plumber)
 
-# Source helper functions
-source("R/fct_data.R")
-source("R/fct_pca.R")
-source("R/fct_deseq2.R")
-source("R/fct_volcano.R")
-source("R/fct_enrich.R")
-source("R/fct_msigdbr.R")
-source("R/fct_gsea.R")
-source("R/fct_genetrend.R")
-source("R/fct_wgcna.R")
-source("R/fct_workspace.R")
-source("R/fct_plot_save.R")
+# Helper: convert JSON list-of-objects to data.frame (row-wise, not column-wise)
+# as.data.frame(list(obj1, obj2, ...)) binds as columns; we need rows
+list_to_df <- function(x) {
+  if (is.data.frame(x)) return(x)
+  if (is.matrix(x)) return(as.data.frame(x))
+  if (is.list(x) && length(x) > 0 && is.list(x[[1]])) {
+    # list of row-objects -> bind as rows
+    return(dplyr::bind_rows(x))
+  }
+  as.data.frame(x)
+}
+
+# Source helper functions - use relative path from api/ to R/
+source("../R/fct_data.R")
+source("../R/fct_pca.R")
+source("../R/fct_deseq2.R")
+source("../R/fct_volcano.R")
+source("../R/fct_enrich.R")
+source("../R/fct_msigdbr.R")
+source("../R/fct_gsea.R")
+source("../R/fct_genetrend.R")
+source("../R/fct_wgcna.R")
+source("../R/fct_workspace.R")
+source("../R/fct_plot_save.R")
 
 # Path to data directory
-DATA_DIR <- "data"
+DATA_DIR <- "../data"
 
 #* Health check
 #* @get /api/health
+#* @serializer unboxedJSON
 function() {
   list(status = "ok", version = "0.1.0")
 }
 
 #* Upload data file
 #* @post /api/data/upload
-#* @parser multiPart
-#* @serializer json
+#* @parser multi
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     # Get uploaded file
@@ -79,7 +92,7 @@ function(req, res) {
 
 #* Load demo data
 #* @post /api/data/demo
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res, type = "expr_raw") {
   tryCatch({
     # Validate type
@@ -96,6 +109,9 @@ function(req, res, type = "expr_raw") {
     if (is.matrix(df)) {
       df <- as.data.frame(df)
     }
+
+    # Store in workspace for downstream modules
+    workspace[[type]] <- df
 
     # Get preview
     preview <- get_data_preview(df, n = 100)
@@ -126,24 +142,45 @@ workspace <- new.env(parent = emptyenv())
 
 #* PCA analysis
 #* @post /api/analyze/pca
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
 
-    # Validate inputs
-    if (is.null(body$norm)) {
-      res$status <- 400
-      return(list(error = "Missing 'norm' expression matrix"))
+    # Get data from request body or workspace
+    # Frontend sends DataFile metadata, not actual data - check if it's valid
+    norm_data <- NULL
+    sample_data <- NULL
+
+    # Only use body data if it has actual content (not just metadata)
+    if (!is.null(body$norm) && is.data.frame(body$norm)) {
+      norm_data <- body$norm
     }
-    if (is.null(body$sampleInfo)) {
+    if (!is.null(body$sampleInfo) && is.data.frame(body$sampleInfo)) {
+      sample_data <- body$sampleInfo
+    }
+
+    # Fall back to workspace
+    if (is.null(norm_data) && exists("expr_norm", envir = workspace)) {
+      norm_data <- workspace[["expr_norm"]]
+    }
+    if (is.null(sample_data) && exists("sampleInfo", envir = workspace)) {
+      sample_data <- workspace[["sampleInfo"]]
+    }
+
+    # Validate inputs
+    if (is.null(norm_data)) {
       res$status <- 400
-      return(list(error = "Missing 'sampleInfo' data"))
+      return(list(error = "Missing 'norm' expression matrix. Load demo data first."))
+    }
+    if (is.null(sample_data)) {
+      res$status <- 400
+      return(list(error = "Missing 'sampleInfo' data. Load demo data first."))
     }
 
     # Convert to data frames
-    norm_df <- as.data.frame(body$norm)
-    sample_df <- as.data.frame(body$sampleInfo)
+    norm_df <- list_to_df(norm_data)
+    sample_df <- list_to_df(sample_data)
 
     # Generate task ID
     taskId <- paste0("pca_", as.integer(Sys.time()), "_", sample(1000:9999, 1))
@@ -155,6 +192,12 @@ function(req, res) {
     tryCatch({
       group_list <- sample_df$Group
       pca_result <- compute_pca(norm_df, group_list)
+
+      # Store in workspace for plot endpoint
+      workspace[["pca_result"]] <- list(
+        coordinates = pca_result$coordinates,
+        variance_explained = pca_result$variance_explained
+      )
 
       .task_store[[taskId]] <- list(
         status = "done",
@@ -179,7 +222,7 @@ function(req, res) {
 
 #* Get task status
 #* @get /api/task/<taskId>
-#* @serializer json
+#* @serializer unboxedJSON
 function(taskId, res) {
   if (!exists(taskId, envir = .task_store)) {
     res$status <- 404
@@ -209,26 +252,55 @@ function(taskId, res) {
 
 #* Generate PCA plot
 #* @post /api/plot/pca
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
 
-    if (is.null(body$coordinates)) {
-      res$status <- 400
-      return(list(error = "Missing 'coordinates' data"))
+    # Get coordinates from request body or workspace
+    # Frontend may send empty object - check if it's valid data
+    coords_data <- NULL
+    variance <- body$variance_explained
+
+    # Only use body coordinates if it has actual data (not empty object)
+    if (!is.null(body$coordinates) && is.list(body$coordinates) && length(body$coordinates) > 0) {
+      # Check if it's a valid data frame with rows
+      if (is.data.frame(body$coordinates) && nrow(body$coordinates) > 0) {
+        coords_data <- body$coordinates
+      } else if (length(body$coordinates[[1]]) > 0) {
+        # It's a list with data
+        coords_data <- body$coordinates
+      }
     }
 
-    coords <- as.data.frame(body$coordinates)
+    # Fall back to workspace
+    if (is.null(coords_data) && exists("pca_result", envir = workspace)) {
+      pca_ws <- workspace[["pca_result"]]
+      coords_data <- pca_ws$coordinates
+      if (is.null(variance)) {
+        variance <- pca_ws$variance_explained
+      }
+    }
+
+    if (is.null(coords_data)) {
+      res$status <- 400
+      return(list(error = "Missing 'coordinates' data. Run PCA analysis first."))
+    }
+
+    coords <- list_to_df(coords_data)
     params <- body$params %||% list()
-    variance <- body$variance_explained
 
     # Convert variance from list to named numeric vector
     if (!is.null(variance)) {
       variance <- unlist(variance)
     }
 
+
     svg_content <- render_pca_svg(coords, params, variance)
+    # Ensure SVG is a single string, not a vector
+    if (is.character(svg_content) && length(svg_content) > 1) {
+      svg_content <- paste(svg_content, collapse = "\n")
+    }
     list(svg = svg_content)
   }, error = function(e) {
     res$status <- 500
@@ -238,24 +310,43 @@ function(req, res) {
 
 #* DESeq2 analysis
 #* @post /api/analyze/deseq2
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
 
-    # Validate inputs
-    if (is.null(body$raw)) {
-      res$status <- 400
-      return(list(error = "Missing 'raw' expression matrix"))
+    # Get data from request body or workspace
+    raw_data <- NULL
+    sample_data <- NULL
+
+    if (!is.null(body$raw) && is.data.frame(body$raw)) {
+      raw_data <- body$raw
     }
-    if (is.null(body$sampleInfo)) {
+    if (!is.null(body$sampleInfo) && is.data.frame(body$sampleInfo)) {
+      sample_data <- body$sampleInfo
+    }
+
+    # Fall back to workspace
+    if (is.null(raw_data) && exists("expr_raw", envir = workspace)) {
+      raw_data <- workspace[["expr_raw"]]
+    }
+    if (is.null(sample_data) && exists("sampleInfo", envir = workspace)) {
+      sample_data <- workspace[["sampleInfo"]]
+    }
+
+    # Validate inputs
+    if (is.null(raw_data)) {
       res$status <- 400
-      return(list(error = "Missing 'sampleInfo' data"))
+      return(list(error = "Missing 'raw' expression matrix. Load demo data first."))
+    }
+    if (is.null(sample_data)) {
+      res$status <- 400
+      return(list(error = "Missing 'sampleInfo' data. Load demo data first."))
     }
 
     # Convert to data frames
-    raw_df <- as.data.frame(body$raw)
-    sample_df <- as.data.frame(body$sampleInfo)
+    raw_df <- list_to_df(raw_data)
+    sample_df <- list_to_df(sample_data)
 
     # Get parameters with defaults
     fc <- if (!is.null(body$fc)) as.numeric(body$fc) else 2
@@ -325,7 +416,7 @@ function(req, res) {
 
 #* Get available contrast pairs
 #* @post /api/deseq2/contrasts
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -335,7 +426,7 @@ function(req, res) {
       return(list(error = "Missing 'sampleInfo' data"))
     }
 
-    sample_df <- as.data.frame(body$sampleInfo)
+    sample_df <- list_to_df(body$sampleInfo)
     pairs <- get_contrast_pairs(sample_df)
 
     # Convert to list of lists for JSON
@@ -355,7 +446,7 @@ function(req, res) {
 
 #* Generate Volcano plot
 #* @post /api/plot/volcano
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -365,7 +456,7 @@ function(req, res) {
       return(list(error = "Missing 'degs' data"))
     }
 
-    degs_df <- as.data.frame(body$degs)
+    degs_df <- list_to_df(body$degs)
 
     # Validate DEGs data
     validation <- validate_deseq2_data(degs_df)
@@ -386,7 +477,7 @@ function(req, res) {
 
 #* Save volcano plot as RData
 #* @post /api/export/volcano/rdata
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -396,7 +487,7 @@ function(req, res) {
       return(list(error = "Missing 'degs' data"))
     }
 
-    degs_df <- as.data.frame(body$degs)
+    degs_df <- list_to_df(body$degs)
 
     # Validate DEGs data
     validation <- validate_deseq2_data(degs_df)
@@ -447,7 +538,7 @@ function(req, res) {
 
 #* Enrichment analysis
 #* @post /api/analyze/enrich
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -543,7 +634,7 @@ function(req, res) {
 
 #* Generate enrichment plot
 #* @post /api/plot/enrich
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -574,7 +665,7 @@ function(req, res) {
 
 #* Get available databases
 #* @get /api/databases
-#* @serializer json
+#* @serializer unboxedJSON
 function(res) {
   tryCatch({
     dbs <- get_msigdbr_databases()
@@ -590,7 +681,7 @@ function(res) {
 
 #* Get available species
 #* @get /api/species
-#* @serializer json
+#* @serializer unboxedJSON
 function(res) {
   tryCatch({
     species <- get_msigdbr_species()
@@ -623,8 +714,8 @@ function(req, res) {
 
 #* Load workspace
 #* @post /api/workspace/load
-#* @parser multiPart
-#* @serializer json
+#* @parser multi
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     # Get uploaded file
@@ -651,7 +742,7 @@ function(req, res) {
 
 #* Get workspace status
 #* @get /api/workspace/status
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   steps <- get_workspace_status(workspace)
   list(
@@ -663,7 +754,7 @@ function(req, res) {
 
 #* GSEA analysis
 #* @post /api/analyze/gsea
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -764,7 +855,7 @@ function(req, res) {
 
 #* Generate GSEA plot
 #* @post /api/plot/gsea
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -784,7 +875,7 @@ function(req, res) {
 
     if (is.null(gsea_result)) {
       # Try to reconstruct from provided result
-      result_df <- as.data.frame(body$result)
+      result_df <- list_to_df(body$result)
       # Create a mock object for plotting
       gsea_result <- list(result = result_df)
       class(gsea_result) <- "gseaResult"
@@ -802,7 +893,7 @@ function(req, res) {
 
 #* Export GSEA plot as RData
 #* @post /api/export/gsea/rdata
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -862,7 +953,7 @@ function(req, res) {
 
 #* GeneTrend Mfuzz analysis
 #* @post /api/analyze/genetrend
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -878,8 +969,8 @@ function(req, res) {
     }
 
     # Convert to data frames
-    norm_df <- as.data.frame(body$norm)
-    sample_df <- as.data.frame(body$sampleInfo)
+    norm_df <- list_to_df(body$norm)
+    sample_df <- list_to_df(body$sampleInfo)
 
     # Get Mfuzz parameters
     c_value <- if (!is.null(body$c_value)) as.integer(body$c_value) else 4
@@ -939,7 +1030,7 @@ function(req, res) {
 
 #* Generate GeneTrend all clusters plot
 #* @post /api/plot/genetrend
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -983,7 +1074,7 @@ function(req, res) {
 
 #* Export GeneTrend as RData
 #* @post /api/export/genetrend/rdata
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     # Check if Mfuzz result exists in workspace
@@ -1012,7 +1103,7 @@ function(req, res) {
 
 #* WGCNA analysis - multi-step
 #* @post /api/analyze/wgcna
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -1035,7 +1126,7 @@ function(req, res) {
           res$status <- 400
           return(list(error = "Missing 'expr' expression data"))
         }
-        expr_df <- as.data.frame(body$expr)
+        expr_df <- list_to_df(body$expr)
         cutHeight <- if (!is.null(body$cutHeight)) as.numeric(body$cutHeight) else 15
 
         datExpr0 <- datExpr0_func(expr_df)
@@ -1128,7 +1219,7 @@ function(req, res) {
           return(list(error = "Missing 'trait' data"))
         }
 
-        trait_df <- as.data.frame(body$trait)
+        trait_df <- list_to_df(body$trait)
         datExpr <- workspace$wgcna$datExpr
         net <- workspace$wgcna$net
 
@@ -1245,7 +1336,7 @@ function(req, res) {
 
 #* WGCNA plot
 #* @post /api/plot/wgcna
-#* @serializer json
+#* @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -1302,7 +1393,7 @@ function(req, res) {
 
 #' Save plot as RDS (ggplot object + parameters)
 #' @post /api/plot/save
-#' @serializer json
+#' @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
@@ -1324,7 +1415,7 @@ function(req, res) {
         res$status <- 400
         return(list(error = "Missing 'degs' data for volcano"))
       }
-      degs_df <- as.data.frame(plot_data$degs)
+      degs_df <- list_to_df(plot_data$degs)
       title <- params$title %||% "Volcano Plot"
       colr_up <- params$colr_up %||% "#FC4E2A"
       colr_down <- params$colr_down %||% "#4393C3"
@@ -1344,7 +1435,7 @@ function(req, res) {
         res$status <- 400
         return(list(error = "Missing 'coordinates' data for pca"))
       }
-      coords <- as.data.frame(plot_data$coordinates)
+      coords <- list_to_df(plot_data$coordinates)
       variance <- plot_data$variance_explained
       if (!is.null(variance)) variance <- unlist(variance)
 
@@ -1370,7 +1461,7 @@ function(req, res) {
         res$status <- 400
         return(list(error = "Missing 'results' data for enrich"))
       }
-      eRes <- as.data.frame(plot_data$results)
+      eRes <- list_to_df(plot_data$results)
       plot_obj <- enrich_plot_func(eRes,
         showCategory = params$showCategory %||% 10,
         title = params$title %||% "Enrichment Analysis"
@@ -1406,8 +1497,8 @@ function(req, res) {
 
 #' Load plot from RDS file
 #' @post /api/plot/load
-#' @parser multiPart
-#' @serializer json
+#' @parser multi
+#' @serializer unboxedJSON
 function(req, res) {
   tryCatch({
     # Get uploaded file
